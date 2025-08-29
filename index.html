@@ -115,6 +115,57 @@
       transform: translateY(1px);
     }
     
+    button:disabled {
+      background-color: #95d5b2;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+    
+    /* Loading animation */
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #ffffff;
+      border-radius: 50%;
+      border-top-color: transparent;
+      animation: spin 1s ease-in-out infinite;
+      margin-right: 10px;
+      vertical-align: middle;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .success-message {
+      background-color: #d1eddb;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 15px 0;
+      text-align: center;
+      font-weight: bold;
+      display: none;
+    }
+    
+    .success-message.show {
+      display: block;
+      animation: slideIn 0.5s ease-out;
+    }
+    
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
     /* Mobile specific styles */
     @media (max-width: 480px) {
       body {
@@ -176,7 +227,10 @@
         <label>Subir Voucher de Pago (imagen):</label>
         <input type="file" id="voucher" accept="image/*" required>
       </div>
-      <button onclick="enviarFormulario()">Enviar Pedido</button>
+      <button id="enviarBtn" onclick="enviarFormulario()">Enviar Pedido</button>
+      <div id="successMessage" class="success-message">
+        🎉 ¡Pedido enviado con éxito! Gracias por tu compra.
+      </div>
     </div>
   </div>
 
@@ -276,37 +330,97 @@
       document.getElementById("section3").classList.add("active");
     }
 
+    let enviando = false; // Variable para controlar el envío
+
     async function enviarFormulario() {
+      // Prevenir envíos duplicados
+      if (enviando) {
+        return;
+      }
+
       const voucherFile = document.getElementById("voucher").files[0];
       if (!voucherFile) return alert("Debes subir el voucher");
 
-      const reader = new FileReader();
-      reader.onloadend = async function() {
-        const base64Data = reader.result.split(',')[1];
+      // Marcar como enviando y cambiar el botón
+      enviando = true;
+      const enviarBtn = document.getElementById("enviarBtn");
+      const originalText = enviarBtn.innerHTML;
+      
+      // Mostrar animación de carga
+      enviarBtn.disabled = true;
+      enviarBtn.innerHTML = '<span class="loading"></span>Enviando pedido...';
 
-        const payload = {
-          polos: polos,
-          voucher: {
-            name: voucherFile.name,
-            data: base64Data,
-            mimeType: voucherFile.type
+      try {
+        const reader = new FileReader();
+        reader.onloadend = async function() {
+          try {
+            const base64Data = reader.result.split(',')[1];
+
+            const payload = {
+              polos: polos,
+              voucher: {
+                name: voucherFile.name,
+                data: base64Data,
+                mimeType: voucherFile.type
+              }
+            };
+
+            const response = await fetch("https://script.google.com/macros/s/AKfycby17bJhfZLnBBf3DFtB1DkjFWk94pQ50AKprh7VYj5AEmu3w5THpS-igb7TxOrWsj_D/exec", {
+              method: "POST",
+              body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+            
+            if (result.result === "success") {
+              // Mostrar mensaje de éxito
+              const successMessage = document.getElementById("successMessage");
+              successMessage.classList.add("show");
+              
+              // Ocultar el botón de envío
+              enviarBtn.style.display = "none";
+              
+              // Recargar después de 3 segundos
+              setTimeout(() => {
+                location.reload();
+              }, 3000);
+            } else {
+              // Error en el envío
+              alert("Error: " + result.message);
+              // Restaurar botón
+              enviando = false;
+              enviarBtn.disabled = false;
+              enviarBtn.innerHTML = originalText;
+            }
+          } catch (error) {
+            // Error en la petición
+            console.error("Error:", error);
+            alert("Error al enviar el pedido. Por favor, intenta nuevamente.");
+            // Restaurar botón
+            enviando = false;
+            enviarBtn.disabled = false;
+            enviarBtn.innerHTML = originalText;
           }
         };
-
-        const response = await fetch("https://script.google.com/macros/s/AKfycby17bJhfZLnBBf3DFtB1DkjFWk94pQ50AKprh7VYj5AEmu3w5THpS-igb7TxOrWsj_D/exec", {
-          method: "POST",
-          body: JSON.stringify(payload)
-        });
-
-        const result = await response.json();
-        if (result.result === "success") {
-          alert("Pedido enviado con éxito 🎉");
-          location.reload();
-        } else {
-          alert("Error: " + result.message);
-        }
-      };
-      reader.readAsDataURL(voucherFile);
+        
+        reader.onerror = function() {
+          alert("Error al leer el archivo. Por favor, intenta nuevamente.");
+          // Restaurar botón
+          enviando = false;
+          enviarBtn.disabled = false;
+          enviarBtn.innerHTML = originalText;
+        };
+        
+        reader.readAsDataURL(voucherFile);
+        
+      } catch (error) {
+        console.error("Error:", error);
+        alert("Error al procesar el archivo. Por favor, intenta nuevamente.");
+        // Restaurar botón
+        enviando = false;
+        enviarBtn.disabled = false;
+        enviarBtn.innerHTML = originalText;
+      }
     }
   </script>
 </div>
