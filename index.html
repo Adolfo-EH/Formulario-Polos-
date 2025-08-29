@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Pedidos de Polos - Eagles 2025</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #e6f4ea;
+      color: #1b4332;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+    }
+    h1 {
+      text-align: center;
+      color: #081c15;
+    }
+    .section {
+      display: none;
+    }
+    .active {
+      display: block;
+    }
+    .card {
+      background: #fff;
+      padding: 15px;
+      border-radius: 12px;
+      margin-bottom: 15px;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+    }
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 1em;
+    }
+    button {
+      background-color: #2d6a4f;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #1b4332;
+    }
+  </style>
+</head>
+<body>
+  <h1>PEDIDOS DE POLOS - EAGLES 2025</h1>
+
+  <!-- Paso 1: Número de polos -->
+  <div class="section active" id="section1">
+    <div class="card">
+      <label>¿Cuántos polos deseas pedir?</label>
+      <input type="number" id="cantidad" min="1" max="20" required>
+    </div>
+    <button onclick="irASeccion2()">Siguiente</button>
+  </div>
+
+  <!-- Paso 2: Datos de polos -->
+  <div class="section" id="section2">
+    <form id="formulario">
+      <div id="polosContainer"></div>
+      <button type="button" onclick="irASeccion3()">Siguiente</button>
+    </form>
+  </div>
+
+  <!-- Paso 3: Subir voucher -->
+  <div class="section" id="section3">
+    <div class="card">
+      <label>Subir Voucher de Pago (imagen):</label>
+      <input type="file" id="voucher" accept="image/*" required>
+    </div>
+    <button onclick="enviarFormulario()">Enviar Pedido</button>
+  </div>
+
+  <script>
+    let cantidadPolos = 0;
+    let polos = [];
+
+    function irASeccion2() {
+      cantidadPolos = parseInt(document.getElementById('cantidad').value);
+      if (!cantidadPolos || cantidadPolos < 1) return alert("Debes ingresar una cantidad válida");
+
+      const container = document.getElementById("polosContainer");
+      container.innerHTML = "";
+
+      for (let i = 1; i <= cantidadPolos; i++) {
+        container.innerHTML += `
+          <div class="card">
+            <h3>Polo ${i}</h3>
+            <label>¿Es Alumno(a) o Familiar?</label>
+            <select name="tipo${i}" onchange="toggleCampos(${i}, this.value)">
+              <option value="">Seleccionar...</option>
+              <option value="Alumno">Alumno</option>
+              <option value="Familiar">Familiar</option>
+            </select>
+
+            <div id="campos${i}"></div>
+
+            <label>Talla</label>
+            <select name="talla${i}">
+              <option value="2-4">2-4 (16 soles)</option>
+              <option value="6-8">6-8 (18 soles)</option>
+              <option value="10-12">10-12 (20 soles)</option>
+              <option value="14-16">14-16 (22 soles)</option>
+              <option value="S">S (26 soles)</option>
+              <option value="M">M (26 soles)</option>
+              <option value="L">L (26 soles)</option>
+              <option value="XL">XL (30 soles)</option>
+            </select>
+          </div>
+        `;
+      }
+
+      document.getElementById("section1").classList.remove("active");
+      document.getElementById("section2").classList.add("active");
+    }
+
+    function toggleCampos(i, tipo) {
+      const campos = document.getElementById(`campos${i}`);
+      if (tipo === "Alumno") {
+        campos.innerHTML = `
+          <label>Nombre Completo</label>
+          <input type="text" name="nombre${i}" required>
+          <label>Grado y Sección</label>
+          <input type="text" name="grado${i}">
+        `;
+      } else if (tipo === "Familiar") {
+        campos.innerHTML = `
+          <label>Parentesco</label>
+          <input type="text" name="nombre${i}" placeholder="Ej: Papá de Carlos" required>
+        `;
+      } else {
+        campos.innerHTML = "";
+      }
+    }
+
+    function irASeccion3() {
+      const form = document.getElementById("formulario");
+      const formData = new FormData(form);
+
+      polos = [];
+      for (let i = 1; i <= cantidadPolos; i++) {
+        const tipo = formData.get(`tipo${i}`);
+        const nombreParentesco = formData.get(`nombre${i}`);
+        const grado = formData.get(`grado${i}`) || "";
+        const talla = formData.get(`talla${i}`);
+
+        let precio = 0;
+        if (talla === "2-4") precio = 16;
+        else if (talla === "6-8") precio = 18;
+        else if (talla === "10-12") precio = 20;
+        else if (talla === "14-16") precio = 22;
+        else if (["S","M","L"].includes(talla)) precio = 26;
+        else if (talla === "XL") precio = 30;
+
+        polos.push({ nombreParentesco, gradoSeccion: grado, talla, precio });
+      }
+
+      document.getElementById("section2").classList.remove("active");
+      document.getElementById("section3").classList.add("active");
+    }
+
+    async function enviarFormulario() {
+      const voucherFile = document.getElementById("voucher").files[0];
+      if (!voucherFile) return alert("Debes subir el voucher");
+
+      const reader = new FileReader();
+      reader.onloadend = async function() {
+        const base64Data = reader.result.split(',')[1];
+
+        const payload = {
+          polos: polos,
+          voucher: {
+            name: voucherFile.name,
+            data: base64Data,
+            mimeType: voucherFile.type
+          }
+        };
+
+        const response = await fetch("https://script.google.com/macros/s/AKfycbw7-_VgEeygBt-ES3VtyyrJXD6NnYb4mkTwtFaEn9nnGGKVCAlhUgR79i3TBtZM4w8E/exec", {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        if (result.result === "success") {
+          alert("Pedido enviado con éxito 🎉");
+          location.reload();
+        } else {
+          alert("Error: " + result.message);
+        }
+      };
+      reader.readAsDataURL(voucherFile);
+    }
+  </script>
+</body>
+</html>
