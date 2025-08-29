@@ -224,6 +224,79 @@
       overflow-x: hidden;
       width: 100%;
     }
+    
+    /* Navigation buttons */
+    .navigation-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+      flex-wrap: wrap;
+    }
+    
+    .btn-back {
+      background-color: #6c757d;
+      color: white;
+      flex: 1;
+      min-width: 120px;
+    }
+    
+    .btn-back:hover {
+      background-color: #5a6268;
+    }
+    
+    .btn-next {
+      background-color: #2d6a4f;
+      color: white;
+      flex: 2;
+      min-width: 150px;
+    }
+    
+    .btn-next:hover {
+      background-color: #1b4332;
+    }
+    
+    /* Budget calculator */
+    .budget-card {
+      background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+      border: 2px solid #2d6a4f;
+      margin: 15px 0;
+      position: sticky;
+      top: 10px;
+      z-index: 5;
+    }
+    
+    .budget-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    
+    .budget-title {
+      color: #2d6a4f;
+      font-weight: bold;
+      font-size: 1.1em;
+      margin: 0;
+    }
+    
+    .budget-amount {
+      background-color: #2d6a4f;
+      color: white;
+      padding: 8px 15px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 1.2em;
+    }
+    
+    .budget-details {
+      font-size: 0.9em;
+      color: #495057;
+      margin-top: 8px;
+    }
+    
+    .budget-hidden {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -236,24 +309,58 @@
         <label>¿Cuántos polos deseas pedir?</label>
         <input type="number" id="cantidad" min="1" max="20" required>
       </div>
-      <button onclick="irASeccion2()">Siguiente</button>
+      <div class="navigation-buttons">
+        <button class="btn-next" onclick="irASeccion2()">Siguiente</button>
+      </div>
     </div>
 
     <!-- Paso 2: Datos de polos -->
     <div class="section" id="section2">
+      <!-- Calculador de Presupuesto -->
+      <div id="budgetCard" class="card budget-card budget-hidden">
+        <div class="budget-header">
+          <h3 class="budget-title">💰 Total a Pagar</h3>
+          <div class="budget-amount" id="budgetAmount">S/ 0.00</div>
+        </div>
+        <div class="budget-details" id="budgetDetails">
+          Completa los datos de los polos para calcular el total
+        </div>
+        <button type="button" id="calcularBtn" onclick="calcularPresupuesto()" 
+                style="margin-top: 10px; background-color: #28a745;">
+          📊 Calcular Presupuesto
+        </button>
+      </div>
+      
       <form id="formulario">
         <div id="polosContainer"></div>
-        <button type="button" onclick="irASeccion3()">Siguiente</button>
+        <div class="navigation-buttons">
+          <button type="button" class="btn-back" onclick="regresarASeccion1()">⬅ Regresar</button>
+          <button type="button" class="btn-next" onclick="irASeccion3()">Continuar ➡</button>
+        </div>
       </form>
     </div>
 
     <!-- Paso 3: Subir voucher -->
     <div class="section" id="section3">
+      <!-- Mostrar resumen del presupuesto -->
+      <div id="resumenPresupuesto" class="card budget-card" style="display: none;">
+        <div class="budget-header">
+          <h3 class="budget-title">📋 Resumen del Pedido</h3>
+          <div class="budget-amount" id="totalFinal">S/ 0.00</div>
+        </div>
+        <div class="budget-details" id="resumenDetalles"></div>
+      </div>
+      
       <div class="card">
         <label>Subir Voucher de Pago (imagen):</label>
         <input type="file" id="voucher" accept="image/*" required>
       </div>
-      <button id="enviarBtn" onclick="enviarFormulario()">Enviar Pedido</button>
+      
+      <div class="navigation-buttons">
+        <button type="button" class="btn-back" onclick="regresarASeccion2()">⬅ Regresar</button>
+        <button id="enviarBtn" class="btn-next" onclick="enviarFormulario()">Enviar Pedido 📤</button>
+      </div>
+      
       <div id="successMessage" class="success-message">
         ✅ <strong>¡Pedido enviado exitosamente!</strong><br>
         <span style="font-size: 0.9em; font-weight: normal;">
@@ -267,6 +374,19 @@
   <script>
     let cantidadPolos = 0;
     let polos = [];
+
+    // Funciones de navegación
+    function regresarASeccion1() {
+      document.getElementById("section2").classList.remove("active");
+      document.getElementById("section1").classList.add("active");
+      // Limpiar el calculador
+      document.getElementById("budgetCard").classList.add("budget-hidden");
+    }
+
+    function regresarASeccion2() {
+      document.getElementById("section3").classList.remove("active");
+      document.getElementById("section2").classList.add("active");
+    }
 
     function irASeccion2() {
       cantidadPolos = parseInt(document.getElementById('cantidad').value);
@@ -289,7 +409,7 @@
             <div id="campos${i}"></div>
 
             <label>Talla</label>
-            <select name="talla${i}" required>
+            <select name="talla${i}" required onchange="calcularPresupuesto()">
               <option value="">-- Selecciona una talla --</option>
               <!-- Niños -->
               <option value="2">2 (16 soles)</option>
@@ -313,6 +433,9 @@
 
       document.getElementById("section1").classList.remove("active");
       document.getElementById("section2").classList.add("active");
+      
+      // Mostrar el calculador de presupuesto
+      document.getElementById("budgetCard").classList.remove("budget-hidden");
     }
 
     function toggleCampos(i, tipo) {
@@ -332,6 +455,55 @@
       } else {
         campos.innerHTML = "";
       }
+    }
+
+    // Función para calcular presupuesto
+    function calcularPresupuesto() {
+      const form = document.getElementById("formulario");
+      const formData = new FormData(form);
+      
+      let total = 0;
+      let detalles = [];
+      let polosCompletos = 0;
+
+      for (let i = 1; i <= cantidadPolos; i++) {
+        const tipo = formData.get(`tipo${i}`);
+        const talla = formData.get(`talla${i}`);
+
+        if (tipo && talla) {
+          let precio = 0;
+          if (["2", "4"].includes(talla)) precio = 16;
+          else if (["6", "8"].includes(talla)) precio = 18;
+          else if (["10", "12"].includes(talla)) precio = 20;
+          else if (["14", "16"].includes(talla)) precio = 22;
+          else if (["S","M","L"].includes(talla)) precio = 26;
+          else if (talla === "XL") precio = 30;
+
+          if (precio > 0) {
+            total += precio;
+            detalles.push(`Polo ${i}: Talla ${talla} - S/ ${precio}`);
+            polosCompletos++;
+          }
+        }
+      }
+
+      // Actualizar la interfaz
+      document.getElementById("budgetAmount").textContent = `S/ ${total.toFixed(2)}`;
+      
+      if (polosCompletos > 0) {
+        document.getElementById("budgetDetails").innerHTML = 
+          `<strong>${polosCompletos} polo(s) configurado(s):</strong><br>` +
+          detalles.join('<br>');
+        document.getElementById("calcularBtn").textContent = "✅ Presupuesto Calculado";
+        document.getElementById("calcularBtn").style.backgroundColor = "#28a745";
+      } else {
+        document.getElementById("budgetDetails").textContent = 
+          "Completa los datos de los polos para calcular el total";
+        document.getElementById("calcularBtn").textContent = "📊 Calcular Presupuesto";
+        document.getElementById("calcularBtn").style.backgroundColor = "#28a745";
+      }
+
+      return { total, detalles, polosCompletos };
     }
 
     function irASeccion3() {
@@ -358,6 +530,16 @@
 
       document.getElementById("section2").classList.remove("active");
       document.getElementById("section3").classList.add("active");
+      
+      // Mostrar resumen del presupuesto en la sección 3
+      const presupuesto = calcularPresupuesto();
+      if (presupuesto.polosCompletos > 0) {
+        document.getElementById("resumenPresupuesto").style.display = "block";
+        document.getElementById("totalFinal").textContent = `S/ ${presupuesto.total.toFixed(2)}`;
+        document.getElementById("resumenDetalles").innerHTML = 
+          `<strong>Total de ${presupuesto.polosCompletos} polo(s):</strong><br>` +
+          presupuesto.detalles.join('<br>');
+      }
     }
 
     let enviando = false; // Variable para controlar el envío
@@ -427,7 +609,7 @@
               }
             };
 
-            const response = await fetch("https://script.google.com/macros/s/AKfycbyP-CrsSAtZ_TJF0Xnt8RalPi_1ZtJIAQ324Qx4jh-6xNl6LOZZ6WZ4R98zhMFiVDVo/exec", {
+            const response = await fetch("https://script.google.com/macros/s/AKfycbxMZZ9rCqVSfi6rDnPKac3T1cRZeouQodLrvDRNsFroeaYS9mSG8w0zDzLFnqEG6BX3/exec", {
               method: "POST",
               body: JSON.stringify(payload)
             });
