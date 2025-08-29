@@ -121,6 +121,30 @@
       opacity: 0.7;
     }
     
+    input:disabled, select:disabled {
+      background-color: #f8f9fa;
+      color: #6c757d;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+    
+    .form-disabled {
+      opacity: 0.7;
+      pointer-events: none;
+      position: relative;
+    }
+    
+    .form-disabled::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(255,255,255,0.3);
+      z-index: 1;
+    }
+    
     /* Loading animation */
     .loading {
       display: inline-block;
@@ -141,18 +165,20 @@
     .success-message {
       background-color: #d1eddb;
       color: #155724;
-      border: 1px solid #c3e6cb;
-      padding: 15px;
-      border-radius: 8px;
-      margin: 15px 0;
+      border: 2px solid #c3e6cb;
+      padding: 20px;
+      border-radius: 12px;
+      margin: 20px 0;
       text-align: center;
       font-weight: bold;
+      font-size: 1.1em;
       display: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
     
     .success-message.show {
       display: block;
-      animation: slideIn 0.5s ease-out;
+      animation: slideIn 0.6s ease-out;
     }
     
     @keyframes slideIn {
@@ -229,7 +255,11 @@
       </div>
       <button id="enviarBtn" onclick="enviarFormulario()">Enviar Pedido</button>
       <div id="successMessage" class="success-message">
-        🎉 ¡Pedido enviado con éxito! Gracias por tu compra.
+        ✅ <strong>¡Pedido enviado exitosamente!</strong><br>
+        <span style="font-size: 0.9em; font-weight: normal;">
+          Tu pedido ha sido recibido y procesado correctamente.<br>
+          Gracias por tu compra con Eagles 2025! 🎉
+        </span>
       </div>
     </div>
   </div>
@@ -332,6 +362,38 @@
 
     let enviando = false; // Variable para controlar el envío
 
+    function deshabilitarFormulario() {
+      // Deshabilitar todos los inputs, selects y botones del formulario
+      const inputs = document.querySelectorAll('input, select, button');
+      inputs.forEach(element => {
+        element.disabled = true;
+      });
+      
+      // Agregar clase para deshabilitar visualmente las secciones
+      document.getElementById('section1').classList.add('form-disabled');
+      document.getElementById('section2').classList.add('form-disabled');
+      
+      // La sección 3 mantiene solo el mensaje de éxito visible
+      const section3 = document.getElementById('section3');
+      const successMessage = document.getElementById("successMessage");
+      
+      // Ocultar todo en section3 excepto el mensaje de éxito
+      const section3Children = section3.children;
+      for (let i = 0; i < section3Children.length; i++) {
+        if (section3Children[i].id !== 'successMessage') {
+          section3Children[i].style.opacity = '0.3';
+        }
+      }
+      
+      // Mantener el mensaje de éxito completamente visible y accesible
+      if (successMessage) {
+        successMessage.style.opacity = '1';
+        successMessage.style.pointerEvents = 'auto';
+        successMessage.style.position = 'relative';
+        successMessage.style.zIndex = '10';
+      }
+    }
+
     async function enviarFormulario() {
       // Prevenir envíos duplicados
       if (enviando) {
@@ -380,10 +442,10 @@
               // Ocultar el botón de envío
               enviarBtn.style.display = "none";
               
-              // Recargar después de 3 segundos
-              setTimeout(() => {
-                location.reload();
-              }, 3000);
+              // Deshabilitar el formulario para evitar nuevos envíos
+              deshabilitarFormulario();
+              
+              // NO recargar la página - mantener el mensaje de éxito visible
             } else {
               // Error en el envío
               alert("Error: " + result.message);
