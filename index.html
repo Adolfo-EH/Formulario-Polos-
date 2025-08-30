@@ -358,6 +358,17 @@
     function regresarASeccion1() {
       document.getElementById("section2").classList.remove("active");
       document.getElementById("section1").classList.add("active");
+      
+      // Limpiar el resumen del presupuesto porque va a cambiar la cantidad de polos
+      document.getElementById("resumenPresupuesto").style.display = "none";
+      document.getElementById("totalFinal").textContent = "S/ 0.00";
+      document.getElementById("resumenDetalles").innerHTML = "";
+      
+      // Limpiar el contenedor de polos porque puede cambiar la cantidad
+      document.getElementById("polosContainer").innerHTML = "";
+      
+      // Resetear el array de polos
+      polos = [];
     }
 
     function regresarASeccion2() {
