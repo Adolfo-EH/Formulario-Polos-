@@ -255,14 +255,11 @@
       background-color: #1b4332;
     }
     
-    /* Budget calculator */
+    /* Budget summary for section 3 */
     .budget-card {
       background: linear-gradient(135deg, #f8f9fa, #e9ecef);
       border: 2px solid #2d6a4f;
       margin: 15px 0;
-      position: sticky;
-      top: 10px;
-      z-index: 5;
     }
     
     .budget-header {
@@ -293,10 +290,7 @@
       color: #495057;
       margin-top: 8px;
     }
-    
-    .budget-hidden {
-      display: none;
-    }
+  </style>
   </style>
 </head>
 <body>
@@ -316,21 +310,6 @@
 
     <!-- Paso 2: Datos de polos -->
     <div class="section" id="section2">
-      <!-- Calculador de Presupuesto -->
-      <div id="budgetCard" class="card budget-card budget-hidden">
-        <div class="budget-header">
-          <h3 class="budget-title">💰 Total a Pagar</h3>
-          <div class="budget-amount" id="budgetAmount">S/ 0.00</div>
-        </div>
-        <div class="budget-details" id="budgetDetails">
-          Completa los datos de los polos para calcular el total
-        </div>
-        <button type="button" id="calcularBtn" onclick="calcularPresupuesto()" 
-                style="margin-top: 10px; background-color: #28a745;">
-          📊 Calcular Presupuesto
-        </button>
-      </div>
-      
       <form id="formulario">
         <div id="polosContainer"></div>
         <div class="navigation-buttons">
@@ -379,8 +358,6 @@
     function regresarASeccion1() {
       document.getElementById("section2").classList.remove("active");
       document.getElementById("section1").classList.add("active");
-      // Limpiar el calculador
-      document.getElementById("budgetCard").classList.add("budget-hidden");
     }
 
     function regresarASeccion2() {
@@ -409,7 +386,7 @@
             <div id="campos${i}"></div>
 
             <label>Talla</label>
-            <select name="talla${i}" required onchange="calcularPresupuesto()">
+            <select name="talla${i}" required>
               <option value="">-- Selecciona una talla --</option>
               <!-- Niños -->
               <option value="2">2 (16 soles)</option>
@@ -433,9 +410,6 @@
 
       document.getElementById("section1").classList.remove("active");
       document.getElementById("section2").classList.add("active");
-      
-      // Mostrar el calculador de presupuesto
-      document.getElementById("budgetCard").classList.remove("budget-hidden");
     }
 
     function toggleCampos(i, tipo) {
@@ -457,60 +431,15 @@
       }
     }
 
-    // Función para calcular presupuesto
-    function calcularPresupuesto() {
-      const form = document.getElementById("formulario");
-      const formData = new FormData(form);
-      
-      let total = 0;
-      let detalles = [];
-      let polosCompletos = 0;
-
-      for (let i = 1; i <= cantidadPolos; i++) {
-        const tipo = formData.get(`tipo${i}`);
-        const talla = formData.get(`talla${i}`);
-
-        if (tipo && talla) {
-          let precio = 0;
-          if (["2", "4"].includes(talla)) precio = 16;
-          else if (["6", "8"].includes(talla)) precio = 18;
-          else if (["10", "12"].includes(talla)) precio = 20;
-          else if (["14", "16"].includes(talla)) precio = 22;
-          else if (["S","M","L"].includes(talla)) precio = 26;
-          else if (talla === "XL") precio = 30;
-
-          if (precio > 0) {
-            total += precio;
-            detalles.push(`Polo ${i}: Talla ${talla} - S/ ${precio}`);
-            polosCompletos++;
-          }
-        }
-      }
-
-      // Actualizar la interfaz
-      document.getElementById("budgetAmount").textContent = `S/ ${total.toFixed(2)}`;
-      
-      if (polosCompletos > 0) {
-        document.getElementById("budgetDetails").innerHTML = 
-          `<strong>${polosCompletos} polo(s) configurado(s):</strong><br>` +
-          detalles.join('<br>');
-        document.getElementById("calcularBtn").textContent = "✅ Presupuesto Calculado";
-        document.getElementById("calcularBtn").style.backgroundColor = "#28a745";
-      } else {
-        document.getElementById("budgetDetails").textContent = 
-          "Completa los datos de los polos para calcular el total";
-        document.getElementById("calcularBtn").textContent = "📊 Calcular Presupuesto";
-        document.getElementById("calcularBtn").style.backgroundColor = "#28a745";
-      }
-
-      return { total, detalles, polosCompletos };
-    }
-
     function irASeccion3() {
       const form = document.getElementById("formulario");
       const formData = new FormData(form);
 
       polos = [];
+      let total = 0;
+      let detalles = [];
+      let polosCompletos = 0;
+
       for (let i = 1; i <= cantidadPolos; i++) {
         const tipo = formData.get(`tipo${i}`);
         const nombreParentesco = formData.get(`nombre${i}`);
@@ -526,19 +455,25 @@
         else if (talla === "XL") precio = 30;
 
         polos.push({ nombreParentesco, gradoSeccion: grado, talla, precio });
+        
+        // Si tiene tipo y talla, agregar al resumen
+        if (tipo && talla && precio > 0) {
+          total += precio;
+          detalles.push(`Polo ${i}: Talla ${talla} - S/ ${precio}`);
+          polosCompletos++;
+        }
       }
 
       document.getElementById("section2").classList.remove("active");
       document.getElementById("section3").classList.add("active");
       
       // Mostrar resumen del presupuesto en la sección 3
-      const presupuesto = calcularPresupuesto();
-      if (presupuesto.polosCompletos > 0) {
+      if (polosCompletos > 0) {
         document.getElementById("resumenPresupuesto").style.display = "block";
-        document.getElementById("totalFinal").textContent = `S/ ${presupuesto.total.toFixed(2)}`;
+        document.getElementById("totalFinal").textContent = `S/ ${total.toFixed(2)}`;
         document.getElementById("resumenDetalles").innerHTML = 
-          `<strong>Total de ${presupuesto.polosCompletos} polo(s):</strong><br>` +
-          presupuesto.detalles.join('<br>');
+          `<strong>Total de ${polosCompletos} polo(s):</strong><br>` +
+          detalles.join('<br>');
       }
     }
 
